@@ -1,0 +1,36 @@
+{
+  "background": {
+    "scripts": [
+     "common.js", "background.js"
+    ]
+  },
+  "content_scripts": [
+    {
+      "js": [
+        "jszip.js", "common.js", "contentScript.js"
+      ],
+      "matches": [
+        "https://vk.com/*"
+      ],
+      "run_at": "document_idle"
+    }
+  ],
+  "description": "Сохраняет картинки из переписки",
+  "name": "Image load",
+  "permissions": [
+    "tabs",
+    "*://*/*",
+    "unlimitedStorage",
+    "storage"
+  ],
+  "version": "0.3.5",
+  "author": "LN",
+  "manifest_version": 2,
+  "web_accessible_resources": [
+    "options.js",
+    "common.js",
+    "options.html",
+    "inject.js",
+    "jszip.js"
+  ]
+}
