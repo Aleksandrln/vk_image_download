@@ -49,7 +49,7 @@ function loadImages(id) {
     //let getPhoto = () => api('messages.getHistoryAttachments',parameter , makePhoto);
     let getPhoto = () => {
         api('execute', {
-            v: 5.58, code: 'var count = 4, i = 0; var result = null; var items = []; \n' +
+            v: 5.58, code: 'var count = 20, i = 0; var result = null; var items = []; \n' +
             'var param =' + JSON.stringify(parameter) + ';\n' +
             'while (i < count) {\n' +
             '        i = i + 1;\n' +
@@ -73,14 +73,6 @@ function loadImages(id) {
         })
     };
 
-
-
-
-
-
-
-
-
     loadImages.listender && (loadImages.listender = window.removeEventListener('message', loadImages.listender));
 
     window.addEventListener('message', loadImages.listender = function (event) {
@@ -89,14 +81,19 @@ function loadImages(id) {
             switch (data.type) {
                 case 'closeDialog':
                 close = true;
+                break;
+                case 'zipImages':
+                    downAndZipImages(event.data.data);
+                    break;
             }
         }
     });
 
 
-    let getLinks  = () => {
+    let downAndZipImages  = (data) => {
         let zip = new JSZip();
-        let len=0;
+        data = data || {start:0, stop: links.length, archive:0 , count: true};
+        let len = data.start ;
 
         downloadFile(links[len].href, onDownloadComplete);
 
@@ -115,13 +112,14 @@ function loadImages(id) {
         }
 
         function onDownloadComplete(blobData){
-                    if (len < links.length) {
+                    if (len < data.stop) {
                         let elem = links[len];
                         window.postMessage({type:'photoLoad', data: len}, "*");
                             // add downloaded file to zip:
                             var fileName = elem.date + ' ' +elem.href.substr(elem.href.lastIndexOf('/')+1);
                             zip.file(fileName, blobData);
-                            if (len < links.length -1 && !close){
+                            let partsInfo = dataStop(data, len, blobData);
+                            if (len < data.stop -1 && !close && !partsInfo.endParts){
                                 len++;
                                 downloadFile(links[len].href, onDownloadComplete);
                             } else {
@@ -135,6 +133,12 @@ function loadImages(id) {
                                         a.click();
                                         URL.revokeObjectURL(a.href);
                                     });
+
+                                if (partsInfo.partition && !close) {
+                                    zip = new JSZip();
+                                    len++;
+                                    downloadFile(links[len].href, onDownloadComplete);
+                                }
                                 // then trigger the download link:
                             }
                     }
@@ -142,10 +146,32 @@ function loadImages(id) {
 
     function calculateAndUpdateProgress(evt) {
         if (evt.lengthComputable) {
-             console.log(len +' '+ evt.lengthComputable);
+             //console.log(len +' '+ evt.lengthComputable);
         }
     }
 
+        function dataStop(data, len, blob) {
+            let result = {partition: false, endParts: false};
+            if (data.count && data.archive < data.stop) { // делим по количеству
+                let count = parseInt(data.stop/data.archive);
+                for (let i=1; i <= count; i++){
+                    if (i*data.archive == len) {
+                        result.endParts = true;
+                        break;
+                    }
+                }
+                result.partition = len < data.stop-1;
+            } else if (!data.count && data.archive > 0) {
+                dataStop.blobSize = dataStop.blobSize || 0;
+                dataStop.blobSize += blob.size;
+                if (data.archive *1024*1024 <=  dataStop.blobSize){
+                    result.endParts = true;
+                    dataStop.blobSize = 0;
+                }
+                result.partition = len < data.stop-1;
+            }
+            return result;
+        }
     };
 
     let makePhoto = (response) =>{
@@ -165,7 +191,7 @@ function loadImages(id) {
         if (response.items.length && !close) {
             setTimeout(getPhoto, 200);
         }else{
-            if (links.length) getLinks();
+            if (links.length) window.postMessage({type:'doneGetLink', data: links.length}, "*"); //downAndZipImage();
             else window.postMessage({type:'noLink'}, "*");
         }
         return true;
@@ -180,3 +206,5 @@ chrome.extension.sendRequest({ method: 'getOptions'}, function (opts) {
 var PageId = Math.random()*2500;
 
 injectScript(['inject.js']);
+
+injectStyle(['style.css']);

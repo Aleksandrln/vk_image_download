@@ -31,6 +31,7 @@
     "common.js",
     "options.html",
     "inject.js",
-    "jszip.js"
+    "jszip.js",
+    "style.css"
   ]
 }
