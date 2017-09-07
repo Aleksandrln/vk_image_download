@@ -44,7 +44,7 @@ addElementInList.timer = setTimeout(addElement, 500);
 
 function loadImages(id) {
     let links =[];
-    let close = false;
+    let closeDialog = {close:false, save: true};
     let parameter = {peer_id:id, media_type:'photo', start_from:0, count:200};
     //let getPhoto = () => api('messages.getHistoryAttachments',parameter , makePhoto);
     let getPhoto = () => {
@@ -76,11 +76,12 @@ function loadImages(id) {
     loadImages.listender && (loadImages.listender = window.removeEventListener('message', loadImages.listender));
 
     window.addEventListener('message', loadImages.listender = function (event) {
-        if (event.data && typeof event.data == 'object' && event.data.type) {
+        if (event.data && typeof event.data === 'object' && event.data.type) {
             let data = event.data;
             switch (data.type) {
                 case 'closeDialog':
-                close = true;
+                    closeDialog.close = true;
+                    closeDialog.save = data.data.save  === undefined ? true : data.data.save;
                 break;
                 case 'zipImages':
                     downAndZipImages(event.data.data);
@@ -119,25 +120,31 @@ function loadImages(id) {
                             var fileName = elem.date + ' ' +elem.href.substr(elem.href.lastIndexOf('/')+1);
                             zip.file(fileName, blobData);
                             let partsInfo = dataStop(data, len, blobData);
-                            if (len < data.stop -1 && !close && !partsInfo.endParts){
+                            if (len < data.stop -1 && !closeDialog.close && !partsInfo.endParts){
                                 len++;
                                 downloadFile(links[len].href, onDownloadComplete);
                             } else {
                                 // all files have been downloaded, create the zip
-                                zip.generateAsync({type:"blob"})
-                                    .then(function (content){
-                                        var zipName = "example.zip";
-                                        var a = document.createElement('a');
-                                        a.href =  URL.createObjectURL(content);
-                                        a.download = zipName;
-                                        a.click();
-                                        URL.revokeObjectURL(a.href);
-                                    });
+                                if (!closeDialog.close || (closeDialog.close && closeDialog.save)) {
+                                    zip.generateAsync({type: "blob"})
+                                        .then(function (content) {
+                                            var zipName = "example.zip";
+                                            var a = document.createElement('a');
+                                            a.href = URL.createObjectURL(content);
+                                            a.download = zipName;
+                                            a.click();
+                                            URL.revokeObjectURL(a.href);
+                                        });
+                                }else{
+                                    zip = null;
+                                }
 
-                                if (partsInfo.partition && !close) {
+                                if (partsInfo.partition && !closeDialog.close) {
                                     zip = new JSZip();
                                     len++;
                                     downloadFile(links[len].href, onDownloadComplete);
+                                }else{
+                                    window.postMessage({type:'finishDownload', data:len}, "*");
                                 }
                                 // then trigger the download link:
                             }
@@ -188,7 +195,7 @@ function loadImages(id) {
         });
 
         window.postMessage({type:'updateProcess', data: links.length}, "*");
-        if (response.items.length && !close) {
+        if (response.items.length && !closeDialog.close) {
             setTimeout(getPhoto, 200);
         }else{
             if (links.length) window.postMessage({type:'doneGetLink', data: links.length}, "*"); //downAndZipImage();

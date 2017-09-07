@@ -1,10 +1,16 @@
-#save_images{
-display: inline-flex;
+#save_images {
+    display: inline-flex;
+    position: relative;
 }
 
-.box_layout .group-range{
+.button_gray button {
+    min-width: 176px;
+    min-height: 30px;
+}
+
+.box_layout .group-range {
     display: block;
-   padding-left:12px;
+    padding-left: 12px;
 }
 
 #save_images .group-range span{
@@ -92,4 +98,10 @@ display: inline-flex;
     background: #ffefe9;
     word-wrap: break-word;
     border-radius: 2px;
+}
+
+#progress{
+    position: absolute;
+    margin-top: 35px;
+    margin-left: 25px;
 }

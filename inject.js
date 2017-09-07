@@ -17,7 +17,8 @@ window.addEventListener('message', (event) => {
                 OpenDialogVK.toggleState(data.type, data.data);
                 break;
             case'photoLoad':
-                OpenDialogVK.htmlElementPhotoLoad.innerText = 'Загружаем: '+data.data + ' шт';
+            case 'finishDownload':
+                //OpenDialogVK.htmlElementPhotoLoad.innerText = 'Загружаем: '+data.data + ' шт';
                 OpenDialogVK.toggleState(data.type, data.data);
                 break;
             case 'noLink':
@@ -37,7 +38,8 @@ function OpenDialogVK(element) {
 
     var html = '<div class="links"></div><div class="slider"></div><div class="photo-load"></div><div class="error-load"></div>' +
         '<div id="save_images">\n' +
-        '   <div class="button_gray"><button class="button_disabled js-zip-images"  disabled>Сохранить изображения</button></div><br>\n' +
+        '<div id="progress"></div> ' +
+        '  <div class="button_gray"><button class="button_disabled js-zip-images"  disabled>Сохранить изображения</button></div><br>\n' +
         '   <div class="group-range">\n' +
         '       <span>Загружать:</span>\n'+
         '       <div class="button-range">\n'+
@@ -60,24 +62,25 @@ function OpenDialogVK(element) {
     var Box = new MessageBox({title: 'Индикатор', onHide: function () {
         Box = null;
         OpenDialogVK.openning = false;
-        window.postMessage({type:'closeDialog'},'*');
+        window.postMessage({type:'closeDialog', data:{save:false}},'*');
     }});
     var progress = new CircularProgress({
-        radius: 70,
+        radius: 60,
         strokeStyle: 'black',
         lineCap: 'round',
         lineWidth: 4
     });
 
     Box.removeButtons();
-    Box.addButton('Остановить загрузку', function () {
+    Box.addButton('Остановить загрузку / сохранить', function () {
         Box.hide();
         Box = null;
         OpenDialogVK.openning = false;
-        window.postMessage({type:'closeDialog'},'*');
+        window.postMessage({type:'closeDialog', data:{save:true}},'*');
     }, 'no', true);
 
     Box.content(html).show();
+    let progressElement = ge('progress', Box.bodyNode);
     let toggleBg =  geByClass1('toggle-bg', Box.bodyNode);
     let maxRangeArchive = geByClass1('max-archive', Box.bodyNode);
     let saveButton = geByClass1('js-zip-images', Box.bodyNode );
@@ -88,9 +91,9 @@ function OpenDialogVK(element) {
     OpenDialogVK.htmlElementLinks =  geByClass1('links', Box.bodyNode);
     OpenDialogVK.htmlElementPhotoLoad =  geByClass1('photo-load', Box.bodyNode);
     OpenDialogVK.htmlElementError=  geByClass1('error-load', Box.bodyNode);
-    Box.bodyNode.firstChild.appendChild(progress.el);
+    progressElement.appendChild(progress.el);
 
-    //progress.update(0);
+    progress.update(0);
 
     saveButton.onclick = function (event) {
         let count ;
@@ -103,6 +106,7 @@ function OpenDialogVK(element) {
                 count: count
             }
         }, '*');
+        OpenDialogVK.toggleState('startDownload');
     };
 
     Box.bodyNode.onkeypress = function (event) {
@@ -156,9 +160,17 @@ function OpenDialogVK(element) {
                 maxRangeArchive.value = range;
                 params.maxRange = +range;
                 break;
+            case 'startDownload':
+                saveButton.disabled = true;
+                saveButton.classList.add('button_disabled');
+                saveButton.innerText = 'Загружаем';
+                break;
             case 'photoLoad':
                 progress.update(range * 100 / params.maxRange);
-            break;
+                break;
+            case 'finishDownload':
+                progress.update(100);
+                break;
         }
     };
 }
