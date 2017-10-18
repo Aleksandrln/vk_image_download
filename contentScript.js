@@ -32,7 +32,7 @@ let addElement = function(){
     elem.onclick = function (event) {
         let idDialog = +window.location.search.match(/.+sel=c*(\d+).*/)[1];
         if ((''+idDialog).length < 4) idDialog +=2000000000;
-        window.postMessage({type:'OpenDialogVK'}, "*");
+        window.postMessage({type:'OpenDialogVK', key:'ImageLoad'}, "*");
         loadImages(idDialog)
     };
     menu.appendChild(elem);
@@ -76,7 +76,7 @@ function loadImages(id) {
     loadImages.listender && (loadImages.listender = window.removeEventListener('message', loadImages.listender));
 
     window.addEventListener('message', loadImages.listender = function (event) {
-        if (event.data && typeof event.data === 'object' && event.data.type) {
+        if (event.data && typeof event.data === 'object' && event.data.key === 'ImageLoad') {
             let data = event.data;
             switch (data.type) {
                 case 'closeDialog':
@@ -115,7 +115,7 @@ function loadImages(id) {
         function onDownloadComplete(blobData){
                     if (len < data.stop) {
                         let elem = links[len];
-                        window.postMessage({type:'photoLoad', data: len}, "*");
+                        window.postMessage({type:'photoLoad', data: len, key:'ImageLoad'}, "*");
                             // add downloaded file to zip:
                             var fileName = elem.date + ' ' +elem.href.substr(elem.href.lastIndexOf('/')+1);
                             zip.file(fileName, blobData);
@@ -144,7 +144,7 @@ function loadImages(id) {
                                     len++;
                                     downloadFile(links[len].href, onDownloadComplete);
                                 }else{
-                                    window.postMessage({type:'finishDownload', data:len}, "*");
+                                    window.postMessage({type:'finishDownload', data:len, key:'ImageLoad'}, "*");
                                 }
                                 // then trigger the download link:
                             }
@@ -194,12 +194,12 @@ function loadImages(id) {
             links.push({msId:element.photo.id, date:element.photo.date, href:element.photo['photo_' + maxSize]});
         });
 
-        window.postMessage({type:'updateProcess', data: links.length}, "*");
+        window.postMessage({type:'updateProcess', data: links.length, key:'ImageLoad'}, "*");
         if (response.items.length && !closeDialog.close) {
             setTimeout(getPhoto, 200);
         }else{
-            if (links.length) window.postMessage({type:'doneGetLink', data: links.length}, "*"); //downAndZipImage();
-            else window.postMessage({type:'noLink'}, "*");
+            if (links.length) window.postMessage({type:'doneGetLink', data: links.length, key:'ImageLoad'}, "*"); //downAndZipImage();
+            else window.postMessage({type:'noLink', key:'ImageLoad'}, "*");
         }
         return true;
     };

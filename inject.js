@@ -1,7 +1,7 @@
 
 
 window.addEventListener('message', (event) => {
-    if (event.data && typeof event.data == 'object' && event.data.type) {
+    if (event.data && typeof event.data === 'object' && event.data.key === 'ImageLoad') {
         let data = event.data;
         switch (data.type) {
             case 'OpenDialogVK':
@@ -62,7 +62,7 @@ function OpenDialogVK(element) {
     var Box = new MessageBox({title: 'Индикатор', onHide: function () {
         Box = null;
         OpenDialogVK.openning = false;
-        window.postMessage({type:'closeDialog', data:{save:false}},'*');
+        window.postMessage({type:'closeDialog', data:{save:false}, key:'ImageLoad'},'*');
     }});
     var progress = new CircularProgress({
         radius: 60,
@@ -76,7 +76,7 @@ function OpenDialogVK(element) {
         Box.hide();
         Box = null;
         OpenDialogVK.openning = false;
-        window.postMessage({type:'closeDialog', data:{save:true}},'*');
+        window.postMessage({type:'closeDialog', data:{save:true}, key:'ImageLoad'},'*');
     }, 'no', true);
 
     Box.content(html).show();
@@ -104,7 +104,7 @@ function OpenDialogVK(element) {
                 stop: +maxRange.value > params.maxRange ? params.maxRange : +maxRange.value,
                 archive: !count ? +maxRangeArchive.value  : params.maxRange > +maxRangeArchive.value  ?  +maxRangeArchive.value : params.maxRange,
                 count: count
-            }
+            }, key:'ImageLoad'
         }, '*');
         OpenDialogVK.toggleState('startDownload');
     };
